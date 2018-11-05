@@ -14,7 +14,7 @@ public class Beam
     public Vector3 _position { get; private set; }
     public Quaternion _rotation { get; private set; }
     public Rigidbody _rb;
-    public Collider _col;
+    public BoxCollider _col;
     public Vector3 _appliedForce;
 
 
@@ -43,7 +43,7 @@ public class Beam
         _index = index;
 
         InstantiateBeam();
-        SetColor();
+        SwitchBeams();
 
     }
 
@@ -62,16 +62,15 @@ public class Beam
 
         //Place beam object into 3D space
         _beam.transform.position = _position;
-        /*var bol = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        bol.transform.localScale = new Vector3(0.1f,0.1f,0.1f);
-        bol.transform.position = _position;*/
         _rotation = Quaternion.Euler(new Vector3(0, 0, 30 + 60 * _rotIndex));
         _beam.transform.rotation = _rotation;
 
         //set physics components
         _rb = _beam.AddComponent<Rigidbody>();
         _rb.constraints = RigidbodyConstraints.FreezePositionZ;
+        _rb.mass = 10;
         _col = _beam.GetComponent<BoxCollider>();
+        _col.size = new Vector3(_col.size.x*5,_col.size.y,_col.size.z);
         CollisionSwitch(true);
 
         //Create hinges
@@ -112,7 +111,7 @@ public class Beam
             }
             
 
-            colVal = Remap(colVal, 0f, _grid._mass, 0f, 1f);
+            colVal = Remap(colVal, 0f, _grid._breakForce, 0f, 1f);
 
             Debug.Log(colVal);
             Color col;
@@ -143,21 +142,24 @@ public class Beam
         hJoint.autoConfigureConnectedAnchor = false;
         hJoint.connectedAnchor = Vector3.zero;
         hJoint.anchor = new Vector3(0, dir * _grid._length / 4, 0);
-        hJoint.breakForce = _grid._mass;
+        hJoint.breakForce = _grid._breakForce;
 
         return hJoint;
     }
 
-    public void SetColor()
+    public void ResetCollider()
+    {
+        _col.size = new Vector3(_col.size.x / 5, _col.size.y, _col.size.z);
+    }
+
+    public void SwitchBeams()
     {
         float alpha = _exists ? 1f : 0.1f;
 
         Color col = new Color(1f, 1f, 1f, alpha);
         Renderer rend = _beam.GetComponent<Renderer>();
         rend.material.color = col;
-
     }
-
 
     public void Destruct()
     {

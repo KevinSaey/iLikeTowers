@@ -1,8 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Threading;
-using System.Threading.Tasks;
+using System.IO;
 
 public class Gameplay : MonoBehaviour
 {
@@ -11,16 +10,52 @@ public class Gameplay : MonoBehaviour
     public int _xAmount, _yAmount;
     public TriGrid _triGrid;
     public Material _matBeam, _matLine;
-    public float _mass;
+    public float _breakForce;
     public GUISkin _skin;
+    public Level _level;
+    public List<IniNode> _iniNodes = new List<IniNode>();
 
     private Ray _ray;
     private RaycastHit _hit;
 
+    private string gameDataFileName = "data.json";
+
+    private void SaveGameData()
+    {
+        Debug.Log("Saving");
+
+
+    }
+
+
+    private void LoadGameData()
+    {
+        string filePath = Path.Combine(Application.streamingAssetsPath, gameDataFileName);
+
+        if (File.Exists(filePath))
+        {
+            string dataAsJson = File.ReadAllText(filePath);
+        }
+        else
+        {
+            Debug.Log("File not found");
+        }
+
+    }
+
+
     void Start()
     {
+        _iniNodes.Add(new IniNode(1, 0, true));
+        _iniNodes.Add(new IniNode(2, 0, true));
+        _iniNodes.Add(new IniNode(5, 0, true));
+        _iniNodes.Add(new IniNode(6, 0, true));
+        _iniNodes.Add(new IniNode(8, 0, true));
+        _iniNodes.Add(new IniNode(4, 6, new Vector3(10000, 20, 0)));
+
+        _level = new Level(_xAmount, _yAmount, _iniNodes, "Hold the force", 10, 100, Vector3.zero);
         Physics.autoSimulation = false;
-        _triGrid = new TriGrid(_goNode, _length, _xAmount, _yAmount, _matBeam, _matLine, _mass);
+        _triGrid = new TriGrid(_goNode, _length, _matBeam, _matLine, _breakForce, _level);
     }
 
     void Update()
@@ -41,13 +76,14 @@ public class Gameplay : MonoBehaviour
                 foreach (Beam beam in _triGrid._beams)
                 {
                     if (!beam._exists) beam.Destruct();
+                    else beam.ResetCollider();
 
                 }
                 for (int j = 0; j < _triGrid._nodes.Count; j++)
                 {
                     for (int i = 0; i < _triGrid._nodes[i].Count; i++)
                     {
-                        if (_triGrid._nodes[j][i]._connectedBeams == 0 
+                        if (_triGrid._nodes[j][i]._connectedBeams == 0
                             && !_triGrid._nodes[j][i]._hasForce
                             && !_triGrid._nodes[j][i]._kinematic) _triGrid._nodes[j][i].Destruct();
                     }
@@ -94,7 +130,9 @@ public class Gameplay : MonoBehaviour
     {
         GUI.skin = _skin;
         GUI.Label(new Rect(10, 10, 200, 50), $"# Beams {_triGrid._numberOfBeams.ToString()}"); // show the amount of used beams
-        GUI.Label(new Rect(Screen.width - -110, 10, 100, 50), $"Turn {_triGrid._turn.ToString()}"); // show the amount of turns
+        //GUI.Label(new Rect(10, 50, 200, 50), $"# Beams left {(_triGrid._maxBeams- _triGrid._numberOfBeams).ToString()}"); // show the amount beams left
+        GUI.Label(new Rect(Screen.width - 110, 10, 100, 50), $"Turn {_triGrid._turn.ToString()}"); // show the amount of turns
+
 
         if (_triGrid._broken)
         {
@@ -131,7 +169,7 @@ public class Gameplay : MonoBehaviour
                 }
                 _triGrid._beamExists[beam._index] = !_triGrid._beamExists[beam._index];
 
-                beam.SetColor();
+                beam.SwitchBeams();
             }
         }
     }

@@ -14,7 +14,7 @@ public class Node
     public string _type;
     public Vector3 _force;
 
-    private ConstantForce _cForce;
+    
 
     public int _connectedBeams = 0;
     public GameObject _node;
@@ -47,17 +47,19 @@ public class Node
     private void CreateNode()
     {
         _node = GameObject.Instantiate(_grid._goNode, _position, Quaternion.identity);
-        _node.name = $"Node_|{_xIndex.ToString()}-{_yIndex.ToString()}|";
+        _rb = _node.GetComponent<Rigidbody>();
+        _node.name = $"Node_|{_xIndex}-{_yIndex}|";
     }
 
     public void SetKinematic()
     {
-        _rb = _node.GetComponent<Rigidbody>();
+
         _kinematic = true;
         _rb.isKinematic = true;
         _node.GetComponent<MeshRenderer>().enabled = true;
         Renderer rend = _node.GetComponent<Renderer>();
-        rend.material.color = new Color(1f, 0f, 0f, 1f);
+        _node.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        rend.material.color = new Color(0.8f, 0f, 0f, 0.5f);
     }
 
     public void SwitchLineRenderer()
@@ -69,10 +71,8 @@ public class Node
     {
         _force = force;
         _hasForce = true;
-        _cForce = _node.AddComponent<ConstantForce>();
-        _cForce.force = _force;
         _node.GetComponent<MeshRenderer>().enabled = true;
-        //DrawForce();
+        DrawForce();
     }
 
     public void DrawForce()
@@ -82,7 +82,7 @@ public class Node
             _lineRenderer = _node.AddComponent<LineRenderer>();
         }
         _lineRenderer.SetPosition(0, _node.transform.position);
-        _lineRenderer.SetPosition(1, _node.transform.position + _cForce.force * 0.1f);
+        _lineRenderer.SetPosition(1, _node.transform.position + _force * 0.001f);
         _lineRenderer.startWidth = 0.5f;
         _lineRenderer.endWidth = 0.05f;
         _lineRenderer.material = _grid._matLine;
@@ -102,7 +102,6 @@ public class Node
     public void Destruct()
     {
         GameObject.Destroy(_node);
-
     }
 
 

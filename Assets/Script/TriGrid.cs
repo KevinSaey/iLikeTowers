@@ -23,14 +23,15 @@ public class TriGrid
 {
     public GameObject _goNode;
     public float _length;
-    public int _xAmount, _yAmount;
+    
     public Material _matBeam, _matLine;
-    public float _mass;
+    public float _breakForce;
 
     //Variables for gamestate --> JSON
-    public List<IniNode> _iniNodes = new List<IniNode>();//
-    public List<string> _Levels;//
-    public List<bool> _beamExists = new List<bool>();//
+    public int _xAmount, _yAmount;// JSON
+    public List<IniNode> _iniNodes = new List<IniNode>();// JSON
+    public List<bool> _beamExists = new List<bool>();// JSON
+    public Vector3 _position; //JSON
 
     public List<List<Node>> _nodes = new List<List<Node>>();
     public List<Beam> _beams = new List<Beam>();
@@ -40,15 +41,17 @@ public class TriGrid
     public bool _broken;
 
     // Constructor Grid
-    public TriGrid(GameObject goNode, float length, int xAmount, int yAmount, Material matBeam, Material matLine, float mass)
+    public TriGrid(GameObject goNode, float length, Material matBeam, Material matLine, float mass, Level level)
     {
         _goNode = goNode;
         _length = length;
-        _xAmount = xAmount;
-        _yAmount = yAmount;
         _matBeam = matBeam;
         _matLine = matLine;
-        _mass = mass;
+        _breakForce = mass;
+        _xAmount = level._xAmount;
+        _yAmount = level._yAmount;
+        _position = level._position;
+        _iniNodes = level._iniNodes;
 
         MakeGrid();
     }
@@ -56,13 +59,6 @@ public class TriGrid
     //     Generate points for a grid for perfect triangles
     public void MakeGrid()
     {
-        _iniNodes.Add(new IniNode(1, 0, true));
-        _iniNodes.Add(new IniNode(2, 0, true));
-        _iniNodes.Add(new IniNode(5, 0, true));
-        _iniNodes.Add(new IniNode(6, 0, true));
-        _iniNodes.Add(new IniNode(8, 0, true));
-        _iniNodes.Add(new IniNode(4, 6, new Vector3(100, 0, 0)));
-
         _broken = false;
         for (int j = 0; j < _yAmount; j++)
         {
@@ -106,7 +102,9 @@ public class TriGrid
             }
             if (iniNode._hasForce)
             {
-                _nodes[y][x].Setforce(iniNode._force);
+                var rb = _nodes[y][x]._rb;
+                rb.AddForce(iniNode._force,ForceMode.Force);                
+               _nodes[y][x].Setforce(iniNode._force);
             }
         }
     }
@@ -176,7 +174,7 @@ public class TriGrid
                     _beams[i]._startNode._connectedBeams++;
                     _beams[i]._endNode._connectedBeams++;
                 }
-                _beams[i].SetColor();
+                _beams[i].SwitchBeams();
             }
         }
 
@@ -201,7 +199,7 @@ public class TriGrid
         foreach (var beam in _beams.Where(s => s._exists))
         {
             beam.ShowForces();
-            if (beam.CheckBroken()) beam.SetColor();
+            if (beam.CheckBroken()) beam.SwitchBeams();
             if (!_broken) _broken = beam.CheckBroken();
         }
 
@@ -228,7 +226,6 @@ public class TriGrid
     {
         _beams.Clear();
         _nodes.Clear();
-        _iniNodes.Clear();
     }
 
     float Sq(float num) => num * num;
